@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from .models import Category, Banner, Inventory, HotSearch, Cart, User, Bill
 from .serializers import (CategorySerializer, BannerSerializer, UserSerializer,
                           InventorySerializer, InventorySingleSerializer, HotSearchSerializer, CartSerializer)
+import json
 
 
 @api_view(('GET',))
@@ -32,8 +33,11 @@ def getBanner(request):
 @api_view(('GET',))
 def getGoodsList(request):
     keywords = request.GET.get('keywords')
+    goodsIdList = request.GET.get('goodsIdList')
     page = int(request.GET.get('page'))
     queryset = Inventory.objects.values('id', 'goodsname', 'img', 'saleprice')
+    if goodsIdList:
+        queryset = queryset.filter(pk__in=json.loads(goodsIdList))
     if keywords:
         queryset = queryset.filter(goodsname__contains=keywords)
     queryset = queryset[(page - 1) * 50: page * 50]
