@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Category, Banner, Inventory, HotSearch, Cart, User
+from .models import Category, Banner, Inventory, HotSearch, Cart, User, Bill
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -21,6 +21,9 @@ class InventorySerializer(serializers.ModelSerializer):
         model = Inventory
         fields = '__all__'
 
+# todo
+
+
 class InventorySingleSerializer(serializers.ModelSerializer):
     category = CategorySerializer(many=False, read_only=True)
 
@@ -35,15 +38,23 @@ class HotSearchSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class CartSerializer(serializers.ModelSerializer):
-    inventory = InventorySingleSerializer()
-
+class BillSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Cart
+        model = Bill
         fields = '__all__'
 
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+        fields = '__all__'
+
+
+class CartSerializer(serializers.ModelSerializer):
+    inventory = InventorySingleSerializer()
+    bill = BillSerializer()
+    user = UserSerializer()
+
+    class Meta:
+        model = Cart
         fields = '__all__'

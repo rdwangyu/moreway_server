@@ -21,14 +21,21 @@ class InventoryAdmin(admin.ModelAdmin):
 class HotSearchAdmin(admin.ModelAdmin):
     list_display = ['id', 'text', 'clicktimes', 'u']
 
+
 class CartAdmin(admin.ModelAdmin):
-    list_display = ['id', 'inventory', 'num', 'user', 'bill', 't']
+    list_display = ['id', 'inventory', 'num', 'price',
+                    'discount', 'user', 'bill', 't']
+
 
 class BillAdmin(admin.ModelAdmin):
-    list_display = ['id', 'payable', 't']
+    list_display = ['id', 'payable', 'num',
+                    'discount', 'paytype', 'status', 't']
+
 
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['id', 'wxname', 'wxid', 'name', 'age', 'tel', 'addr', 'lastlogin', 't']
+    list_display = ['id', 'openid', 'session', 'expired', 'name',
+                    'age', 'tel', 'addr', 'lastlogin', 't']
+
 
 admin.site.register(Banner, BannerAdmin)
 admin.site.register(Category, CategoryAdmin)
