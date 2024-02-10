@@ -1,74 +1,91 @@
 from django.db import models
-from datetime import datetime, timedelta
-
-
-class Temp(models.Model):
-    name = models.CharField(default='')
 
 
 class Category(models.Model):
-    class0 = models.CharField(default='未分类0')
-    class1 = models.CharField(default='未分类1')
-    img = models.CharField(default='-')
-    ext0 = models.CharField(default='-')
-    ext1 = models.CharField(default='-')
-    ext2 = models.CharField(default='-')
-    ext3 = models.CharField(default='-')
-    ext4 = models.CharField(default='-')
+    class_0 = models.CharField(default='未分类')
+    class_1 = models.CharField(default='未分类')
+    ext_0 = models.CharField(default='-')
+    ext_1 = models.CharField(default='-')
+    ext_2 = models.CharField(default='-')
+    ext_3 = models.CharField(default='-')
+    ext_4 = models.CharField(default='-')
+    img = models.CharField(default='kong.png')
 
 
 class Banner(models.Model):
-    img = models.CharField(default='-')
-    url = models.CharField(default='/')
+    img = models.CharField(default='kong.png')
+    url = models.CharField(default='-')
     remark = models.TextField(default='-')
     t = models.DateTimeField(auto_now_add=True)
 
 
-class Inventory(models.Model):
+class Goods(models.Model):
+    name = models.CharField(default='-')
     barcode = models.CharField(default='0')
-    goodsname = models.CharField(default='-')
     num = models.IntegerField(default=0)
-    saleprice = models.FloatField(default=0.0)
-    inputprice = models.FloatField(default=0.0)
+    retail_price = models.FloatField(default=0.0)
+    cost_price = models.FloatField(default=0.0)
     category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
     brand = models.CharField(default='-')
-    img = models.CharField(default='-')
+    img = models.CharField(default='kong.png')
     remark = models.TextField(default='-')
     t = models.DateTimeField(auto_now_add=True)
-
-
-class HotSearch(models.Model):
-    text = models.CharField(default='-')
-    clicktimes = models.BigIntegerField(default=0)
-    u = models.DateTimeField(auto_now=True)
 
 
 class User(models.Model):
-    openid = models.CharField(default='-')
-    session = models.CharField(default='-')
-    expired = models.DateTimeField(default=datetime.now() + timedelta(days=28))
-    name = models.CharField(default='匿名')
-    age = models.IntegerField(default='0')
-    tel = models.CharField(default='01234567890')
+    wx_openid = models.CharField(default='-')
+    login_session = models.CharField(default='-')
+    login_expired = models.DateTimeField(auto_now=True)
+    nick_name = models.CharField(default='-')
+    full_name = models.CharField(default='-')
+    age = models.IntegerField(default=0)
+    phone = models.CharField(default='-')
     addr = models.CharField(default='-')
-    lastlogin = models.DateTimeField(auto_now=True)
+    last_login = models.DateTimeField(auto_now=True)
     t = models.DateTimeField(auto_now_add=True)
 
 
+class Search(models.Model):
+    text = models.CharField(default='-')
+    click_times = models.BigIntegerField(default=0)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    u = models.DateTimeField(auto_now=True)
+
+
 class Bill(models.Model):
+    PLATFORM_WX = 'WX'
+    PLATFORM_CA = 'CA'
+    PLATFORM_ZFB = 'ZFB'
+    PAY_PLATFORM_ENUM = {
+        PLATFORM_WX: 'WECHAT',
+        PLATFORM_CA: 'CASH',
+        PLATFORM_ZFB: 'ALIPAY'
+    }
+    STATUS_WAIT_CONFIRM = 'WAIT'
+    STATUS_GET_READY = 'READY'
+    STATUS_DILIVERY = 'DELIVERY'
+    STATUS_FINISH = 'FINISH'
+    STATUS_ENUM = {
+        STATUS_WAIT_CONFIRM: 'Wait to confirm',
+        STATUS_GET_READY: 'Get stock to ready',
+        STATUS_DILIVERY: 'Delivery',
+        STATUS_FINISH: 'Finish'
+    }
     payable = models.FloatField(default=0.0)
     num = models.IntegerField(default=1)
     discount = models.FloatField(default=0.0)
-    paytype = models.CharField(default='wx')
-    status = models.IntegerField(default=0)
+    pay_platform = models.CharField(
+        default=PLATFORM_WX, choices=PAY_PLATFORM_ENUM)
+    status = models.CharField(
+        default=STATUS_WAIT_CONFIRM, choices=STATUS_ENUM)
     t = models.DateTimeField(auto_now_add=True)
 
 
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    inventory = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+    goods = models.ForeignKey(Goods, on_delete=models.CASCADE)
     num = models.IntegerField(default=1)
     price = models.FloatField(default=0.0)
     discount = models.FloatField(default=0.0)
-    bill = models.ForeignKey(Bill, on_delete=models.CASCADE)
+    bill = models.ForeignKey(Bill, null=True, on_delete=models.CASCADE)
     t = models.DateTimeField(auto_now_add=True)

@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
-from .models import Category, Banner, Inventory, HotSearch, Cart, User, Bill
+from .models import *
 from .serializers import *
 import json
 import requests
@@ -9,199 +9,193 @@ import hashlib
 
 
 @api_view(('GET',))
-def getTopCategory(request):
-    queryset = Category.objects.values('id', 'class0').distinct('class0')
-    serializer = CategorySerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+def category_list(request):
+    top_category = Category.objects.values(
+        'id', 'class_0').distinct('class_0')
+    serializer = CategorySerializer(top_category, many=True)
+    return Response(data=serializer.data)
 
 
 @api_view(('GET',))
-def getCategory(request):
-    topCategory = request.GET['category']
-    queryset = Category.objects.filter(class0=topCategory).values(
-        'id', 'class1', 'img').distinct('class1')
-    serializer = CategorySerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+def category_detail(request, name):
+    sub_category = Category.objects.filter(class_0=name).values(
+        'id', 'class_1', 'img').distinct('class_1')
+    serializer = CategorySerializer(sub_category, many=True)
+    return Response(data=serializer.data)
 
 
 @api_view(('GET',))
-def getBanner(request):
-    queryset = Banner.objects.values('id', 'img', 'url', 'remark')
-    serializer = BannerSerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+def banner_list(request):
+    ad = Banner.objects.values('id', 'img', 'url', 'remark')
+    serializer = BannerSerializer(ad, many=True)
+    return Response(data=serializer.data)
 
 
 @api_view(('GET',))
-def getGoodsList(request):
+def goods_list(request):
     keywords = request.GET.get('keywords')
-    page = int(request.GET.get('page'))
-    queryset = Inventory.objects.values('id', 'goodsname', 'img', 'saleprice')
+    print(111, keywords)
+    some_id = request.GET.get('some_id')
+    page = int(request.GET.get('page', 1))
+    per_page = int(request.GET.get('per_page', 20))
+
+    goods = Goods.objects.all()
+    if some_id:
+        some_id = json.loads(some_id)
+        goods = goods.filter(id__in=some_id)
     if keywords:
-        queryset = queryset.filter(goodsname__contains=keywords)
-    queryset = queryset[(page - 1) * 50: page * 50]
-    serializer = InventorySerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+        goods = goods.filter(name__contains=keywords)
+    goods = goods[(page - 1) * per_page: page * per_page]
+    serializer = GoodsSerializer(goods, many=True)
+    return Response(data=serializer.data)
 
 
 @api_view(('GET',))
-def getGoodsDetail(request):
-    id = request.GET.get('id')
-    res = {}
+def goods_detail(request, id):
     try:
-        queryset = Inventory.objects.get(pk=id)
-        serializer = InventorySingleSerializer(queryset)
-        res = serializer.data
-    except Inventory.DoesNotExist:
-        res = {}
-    return Response({'status': 200, 'data': res})
+        goods = Goods.objects.get(pk=id)
+        serializer = GoodsSerializer(goods)
+        return Response(data=serializer.data)
+    except Goods.DoesNotExist:
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(('GET',))
-def getBanner(request):
-    queryset = Banner.objects.values('id', 'img', 'url', 'remark')
-    serializer = BannerSerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
-
-
-@api_view(('GET',))
-def getHotSearch(request):
-    queryset = HotSearch.objects.order_by(
-        'clicktimes').values('id', 'text')[:7]
-    serializer = HotSearchSerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+def search_list(request):
+    display_num = 7
+    search = Search.objects.order_by('click_times')
+    serializer = SearchSerializer(search, many=True)
+    return Response(data=serializer.data)
 
 
 @api_view(('POST',))
-def getLogin(request):
-    wxCode = request.POST['wxCode']
-    res = requests.get(
-        f"https://api.weixin.qq.com/sns/jscode2session?appid=wx2576c4210717a45b&secret=0b673ab2dd780b5f5f64b2f04e311229&js_code={ wxCode }&grant_type=authorization_code")
-    res = res.json()
-    print(res)
-    sessionKey = res['session_key']
-    openId = res['openid']
-    session = hashlib.md5(
-        (sessionKey + openId + wxCode).encode('utf-8')).hexdigest()
-    print(session)
-    try:
-        obj = User.objects.get(openid=openId)
-        obj.session = session
-        obj.save()
-    except User.DoesNotExist:
-        obj = User(openid=openId, session=session)
-        obj.save()
+def login(request):
+    wxcode = request.POST.get('wxcode', '')
+    url = "https://api.weixin.qq.com/sns/jscode2session?appid={}&secret={}&js_code={}&grant_type={}".format(
+        'wx2576c4210717a45b',
+        '0b673ab2dd780b5f5f64b2f04e311229',
+        wxcode,
+        'authorization_code')
+    resp = requests.get(url)
+    resp = resp.json()
+    # resp = {'openid': '123', 'session_key': 'test123'} # for test
+    if 'errcode' in resp:
+        ctx = {'errmsg': resp['errmsg'], 'errcode': resp['errcode']}
+        return Response(data=ctx, status=status.HTTP_400_BAD_REQUEST)
 
-    serializer = UserSerializer(obj)
+    openid = resp['openid']
+    session = hashlib.md5(
+        (resp['session_key'] + openid + wxcode).encode('utf-8')).hexdigest()
+    try:
+        user = User.objects.get(wx_openid=openid)
+        user.login_session = session
+        user.save()
+    except User.DoesNotExist:
+        user = User(wx_openid=openid, login_session=session)
+        user.save()
+
+    serializer = UserSerializer(user)
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
-def checkUserSession(request):
-    allow = False
-    userSession = request.POST['userSession'] if 'userSession' in request.POST else request.GET['userSession']
-    user = None
+def _check_session(session):
     try:
-        user = User.objects.get(session=userSession)
-        allow = True
+        user = User.objects.get(login_session=session)
+        return user
     except User.DoesNotExist:
-        allow = False
-    return {allow, user}
+        return None
 
 
-@api_view(('GET',))
-def getOrderList(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    userId = request.GET['userId']
-    queryset = Cart.objects.filter(user_id=userId).order_by('bill_id')
-    serializer = CartSerializer(queryset, many=True)
-    data = {}
+@api_view(('POST',))
+def bill_list(request):
+    user = _check_session(request.POST.get('session', ''))
+    if not user:
+        ctx = {'errmsg': '未登录'}
+        return Response(data=ctx, status=status.HTTP_401_UNAUTHORIZED)
+
+    ctx = {}
+    cart = Cart.objects.filter(user=user, bill__isnull=False).order_by('-bill')
+    serializer = CartSerializer(cart, many=True)
     for item in serializer.data:
-        orderId = item['bill']['id']
-        goods_summary = item['inventory']['goodsname'] + \
+        bill_id = item['bill']['id']
+        goods_name_list = item['goods']['name'] + \
             '\t x' + str(item['num'])
-        if orderId in data:
-            data[orderId]['bill'] = item['bill']
-            data[orderId]['goods_summary'].append(goods_summary)
+        if bill_id in ctx:
+            ctx[bill_id]['bill'] = item['bill']
+            ctx[bill_id]['goods_name_list'].append(goods_name_list)
         else:
-            data = {orderId: {
-                'bill': item['bill'],
-                'cover': {
-                    'goods_name': item['inventory']['goodsname'],
-                    'img': item['inventory']['img']
-                },
-                'goods_summary': [goods_summary]
-            }}
-    return Response({'status': 200, 'data': data})
+            ctx = {
+                bill_id: {
+                    'bill': item['bill'],
+                    'cover': {
+                        'goods_name': item['goods']['name'],
+                        'img': item['goods']['img']
+                    },
+                    'goods_name_list': [goods_name_list]
+                }
+            }
+    return Response(data=ctx)
 
 
-@api_view(('GET',))
-def getOrderDetail(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    orderId = request.GET['orderId']
-    queryset = Cart.objects.filter(bill_id=orderId)
-    serializer = CartSerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+@api_view(('POST',))
+def bill_detail(request, id):
+    user = _check_session(request.POST.get('session', ''))
+    if not user:
+        ctx = {'errmsg': '未登录'}
+        return Response(data=ctx, status=status.HTTP_401_UNAUTHORIZED)
+
+    cart = Cart.objects.filter(bill_id=id)
+    serializer = CartSerializer(cart, many=True)
+    return Response(data=serializer.data)
 
 
-@api_view(('GET',))
-def getCart(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    queryset = Cart.objects.filter(user=user)
-    serializer = CartSerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+@api_view(('POST',))
+def cart_list(request):
+    user = _check_session(request.POST.get('session', ''))
+    if not user:
+        ctx = {'errmsg': '未登录'}
+        return Response(data=ctx, status=status.HTTP_401_UNAUTHORIZED)
+
+    cart = Cart.objects.filter(user=user)
+    some_id = request.POST.get('some_id')
+    if some_id:
+        some_id = json.loads(some_id)
+        cart = cart.filter(goods_id__in=some_id)
+    serializer = CartSerializer(cart, many=True)
+    return Response(data=serializer.data)
 
 
-@api_view(('GET',))
-def getCartGoods(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    goodsIdList = json.loads(request.GET.get('goodsIdList'))
-    queryset = Cart.objects.filter(
-        user=user, inventory_id__in=goodsIdList)
-    serializer = CartSerializer(queryset, many=True)
-    return Response({'status': 200, 'data': serializer.data})
+@api_view(('POST', 'DELETE'))
+def cart_detail(request, id):
+    user = _check_session(request.POST.get('session', ''))
+    if not user:
+        ctx = {'errmsg': '未登录'}
+        return Response(data=ctx, status=status.HTTP_401_UNAUTHORIZED)
 
-
-@api_view(('GET',))
-def addCart(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    goodsId = int(request.GET['goodsId'])
-    goodsNum = int(request.GET['num'])
-    inventory = Inventory.objects.get(pk=goodsId)
-    bill = Bill.objects.get(pk=1)
-    print(user, 222222)
-    obj = Cart(user=user, inventory=inventory, num=goodsNum, bill=bill)
-    obj.save()
-    return Response({'status': 200, 'msg': '添加成功'})
-
-
-@api_view(('GET',))
-def delCart(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    goodsId = int(request.GET['goodsId'])
-    obj = Cart.objects.filter(user=user, inventory_id=goodsId)
-    obj.delete()
-    return Response({'status': 200, 'msg': '删除成功'})
+    if request.method == 'POST':
+        num = int(request.POST.get('num', -1))
+        goods = Goods.objects.get(pk=id)
+        cart = Cart(user=user, goods=goods, num=num)
+        cart.save()
+        serializer = CartSerializer(cart)
+        return Response(data=serializer.data)
+    elif request.method == 'DELETE':
+        obj = Cart.objects.filter(user=user, goods_id=id)
+        obj.delete()
+        ctx = {'msg': '删除成功'}
+        return Response(data=ctx)
 
 
 @api_view(('POST',))
 def pay(request):
-    allow, user = checkUserSession(request)
-    if not allow:
-        return Response(status=status.HTTP_401_UNAUTHORIZED, data={'msg': '未登录'})
-    data = json.loads(request.POST['data'])
-    goodsList = data['goodsList']
-    addr = data['addr']
+    user = _check_session(request.POST.get('session', ''))
+    if not user:
+        ctx = {'errmsg': '未登录'}
+        return Response(data=ctx, status=status.HTTP_401_UNAUTHORIZED)
+
+    cart_list = request.POST.get('cart_list')
+    cart_list = json.loads(cart_list)
+    addr = request.POST.get('addr', '')
 
     total = {
         'payable': 0,
@@ -209,26 +203,28 @@ def pay(request):
         'discount': 0,
     }
 
-    obj = Bill(status=0)
-    obj.save()
-    billId = Bill.objects.latest('id')
-    for i in range(len(goodsList)):
-        order = goodsList[i]
-        print(order)
-        queryset = Cart.objects.get(pk=order['id'])
-        queryset.num = order['num']
-        queryset.price = order['inventory']['saleprice']
-        queryset.discount = order['discount']
-        queryset.bill = billId
-        queryset.save()
+    bill = Bill(status=Bill.STATUS_ENUM[Bill.STATUS_WAIT_CONFIRM])
+    bill.save()
+    bill_id = Bill.objects.latest('id')
 
-        total['payable'] += queryset.num * queryset.price - queryset.discount
-        total['num'] += queryset.num
+    print(cart_list, 44444)
+    for i in range(len(cart_list)):
+        order = cart_list[i]
+        cart = Cart.objects.get(pk=order['id'])
+        print(cart, 222)
+        cart.num = order['num']
+        cart.price = order['price']
+        cart.discount = order['discount']
+        cart.bill = bill_id
+        cart.save()
 
-    obj.payable = total['payable']
-    obj.num = total['num']
-    obj.discount = total['discount']
-    obj.save()
+        total['payable'] += cart.num * cart.price - cart.discount
+        total['num'] += cart.num
 
-    serializers = BillSerializer(obj)
-    return Response(data=serializers.data, status=status.HTTP_200_OK)
+    bill.payable = total['payable']
+    bill.num = total['num']
+    bill.discount = total['discount']
+    bill.save()
+
+    serializers = BillSerializer(bill)
+    return Response(data=serializers.data)
