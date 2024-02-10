@@ -34,7 +34,6 @@ def banner_list(request):
 @api_view(('GET',))
 def goods_list(request):
     keywords = request.GET.get('keywords')
-    print(111, keywords)
     some_id = request.GET.get('some_id')
     page = int(request.GET.get('page', 1))
     per_page = int(request.GET.get('per_page', 20))
@@ -207,11 +206,9 @@ def pay(request):
     bill.save()
     bill_id = Bill.objects.latest('id')
 
-    print(cart_list, 44444)
     for i in range(len(cart_list)):
         order = cart_list[i]
         cart = Cart.objects.get(pk=order['id'])
-        print(cart, 222)
         cart.num = order['num']
         cart.price = order['price']
         cart.discount = order['discount']
