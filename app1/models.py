@@ -23,11 +23,14 @@ class Goods(models.Model):
     name = models.CharField(default='-')
     barcode = models.CharField(default='0')
     num = models.IntegerField(default=0)
-    retail_price = models.FloatField(default=0.0)
-    cost_price = models.FloatField(default=0.0)
+    retail_price = models.DecimalField(
+        max_digits=7, decimal_places=2, default=0.0)
+    cost_price = models.DecimalField(
+        max_digits=7, decimal_places=2, default=0.0)
     category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
     brand = models.CharField(default='-')
     img = models.CharField(default='kong.png')
+    label = models.IntegerField(default=0) # 11111101
     remark = models.TextField(default='-')
     t = models.DateTimeField(auto_now_add=True)
 
@@ -35,12 +38,12 @@ class Goods(models.Model):
 class User(models.Model):
     wx_openid = models.CharField(default='-')
     login_session = models.CharField(default='-')
-    login_expired = models.DateTimeField(auto_now=True)
-    nick_name = models.CharField(default='-')
-    full_name = models.CharField(default='-')
+    login_expired = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(null=True)
+    nickname = models.CharField(null=True)
     age = models.IntegerField(default=0)
-    phone = models.CharField(default='-')
-    addr = models.CharField(default='-')
+    phone = models.CharField(null=True)
+    addr = models.CharField(null=True)
     last_login = models.DateTimeField(auto_now=True)
     t = models.DateTimeField(auto_now_add=True)
 
@@ -53,31 +56,11 @@ class Search(models.Model):
 
 
 class Bill(models.Model):
-    PLATFORM_WX = 'WX'
-    PLATFORM_CA = 'CA'
-    PLATFORM_ZFB = 'ZFB'
-    PAY_PLATFORM_ENUM = {
-        PLATFORM_WX: 'WECHAT',
-        PLATFORM_CA: 'CASH',
-        PLATFORM_ZFB: 'ALIPAY'
-    }
-    STATUS_WAIT_CONFIRM = 'WAIT'
-    STATUS_GET_READY = 'READY'
-    STATUS_DILIVERY = 'DELIVERY'
-    STATUS_FINISH = 'FINISH'
-    STATUS_ENUM = {
-        STATUS_WAIT_CONFIRM: 'Wait to confirm',
-        STATUS_GET_READY: 'Get stock to ready',
-        STATUS_DILIVERY: 'Delivery',
-        STATUS_FINISH: 'Finish'
-    }
-    payable = models.FloatField(default=0.0)
+    payable = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
     num = models.IntegerField(default=1)
-    discount = models.FloatField(default=0.0)
-    pay_platform = models.CharField(
-        default=PLATFORM_WX, choices=PAY_PLATFORM_ENUM)
-    status = models.CharField(
-        default=STATUS_WAIT_CONFIRM, choices=STATUS_ENUM)
+    discount = models.DecimalField(max_digits=7, decimal_places=2, default=0.0)
+    pay_platform = models.IntegerField(default=0)
+    status = models.IntegerField(default=0)
     t = models.DateTimeField(auto_now_add=True)
 
 
@@ -85,7 +68,7 @@ class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE)
     num = models.IntegerField(default=1)
-    price = models.FloatField(default=0.0)
-    discount = models.FloatField(default=0.0)
+    price = models.DecimalField(max_digits=7, decimal_places=2, default=0.0)
+    discount = models.DecimalField(max_digits=7, decimal_places=2, default=0.0)
     bill = models.ForeignKey(Bill, null=True, on_delete=models.CASCADE)
     t = models.DateTimeField(auto_now_add=True)
