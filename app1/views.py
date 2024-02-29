@@ -6,7 +6,7 @@ from django.db.models import F
 import json
 import requests
 import hashlib
-from datetime import timedelta
+from datetime import timedelta, datetime
 from .models import *
 from .serializers import *
 
@@ -46,7 +46,8 @@ def goods_list(request):
 
     goods = Goods.objects.all().order_by('-t')
     if class_1 and class_0:
-        goods = goods.filter(category__class_0=class_0, category__class_1=class_1)
+        goods = goods.filter(category__class_0=class_0,
+                             category__class_1=class_1)
     elif some_id:
         some_id = json.loads(some_id)
         goods = goods.filter(id__in=some_id)
@@ -123,9 +124,8 @@ def bill_list(request):
         return Response(data={'errmsg': err_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
     ctx = {}
-    cart = Cart.objects.filter(user=user, bill__isnull=False).order_by('-bill')
+    cart = Cart.objects.filter(user=user, bill__isnull=False)
     serializer = CartSerializer(cart, many=True)
-    # print(serializer.data, 333)
     for item in serializer.data:
         bill_id = item['bill']['id']
         goods_name_list = "{}\t￥{}-------x{}".format(
@@ -227,29 +227,29 @@ def pay(request):
 
     bill = Bill()
     bill.save()
-    bill_id = Bill.objects.latest('id')
-
+    bill = Bill.objects.latest('id')
     for i in range(len(cart_list)):
-        order = cart_list[i]
-        cart = Cart.objects.get(pk=order['id'])
-        cart.num = order['num']
-        cart.price = order['goods']['retail_price']
-        cart.discount = order['discount']
-        cart.bill = bill_id
+        data = cart_list[i]
+        cart = Cart.objects.get(pk=data['id'])
+        cart.num = data['num']
+        cart.price = data['goods']['retail_price']
+        cart.discount = data['discount']
+        cart.bill = bill
         cart.save()
 
         total['payable'] += float(cart.num) * \
             float(cart.price) - float(cart.discount)
         total['num'] += cart.num
 
-        userInfo['id'] = order['user']['id']
-        userInfo['addr'] = order['user']['addr']
-        userInfo['phone'] = order['user']['phone']
-        userInfo['name'] = order['user']['name']
+        userInfo['id'] = data['user']['id']
+        userInfo['addr'] = data['user']['addr']
+        userInfo['phone'] = data['user']['phone']
+        userInfo['name'] = data['user']['name']
 
     bill.payable = total['payable']
     bill.num = total['num']
     bill.discount = total['discount']
+    bill.sn = bill.t.strftime("%Y%m%d%H%M%S") + str(bill.id).zfill(4)
     bill.save()
 
     user = User.objects.get(pk=userInfo['id'])
@@ -261,6 +261,7 @@ def pay(request):
     serializers = BillSerializer(bill)
     return Response(data=serializers.data)
 
+
 @api_view(('PUT',))
 def user_detail(request):
     user, err_msg = _check_session(request.POST.get('session', ''))
@@ -271,4 +272,3 @@ def user_detail(request):
     user.save()
     serializers = UserSerializer(user)
     return Response(data=serializers.data)
-

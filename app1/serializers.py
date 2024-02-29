@@ -35,9 +35,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class BillSerializer(serializers.ModelSerializer):
+    created = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
     class Meta:
         model = Bill
-        fields = '__all__'
+        fields = '__all__'        
 
 
 class CartSerializer(serializers.ModelSerializer):
