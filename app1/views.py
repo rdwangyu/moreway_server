@@ -40,22 +40,22 @@ def goods_list(request):
     class_1 = request.GET.get('class_1')
     label = request.GET.get('label')
     keywords = request.GET.get('keywords')
-    some_id = request.GET.get('some_id')
+    goods_id_list = request.GET.get('goods_id_list')
     page = int(request.GET.get('page', 1))
-    per_page = int(request.GET.get('per_page', 20))
+    page_size = int(request.GET.get('page_size', 20))
 
-    goods = Goods.objects.all().order_by('-t')
+    goods = Goods.objects.all().order_by('-created_time')
     if class_1 and class_0:
         goods = goods.filter(category__class_0=class_0,
                              category__class_1=class_1)
-    elif some_id:
-        some_id = json.loads(some_id)
-        goods = goods.filter(id__in=some_id)
+    elif goods_id_list:
+        goods_id_list = json.loads(goods_id_list)
+        goods = goods.filter(id__in=goods_id_list)
     elif keywords:
         goods = goods.filter(name__contains=keywords)
     elif label:
         goods = goods.filter(label=label)
-    goods = goods[(page - 1) * per_page: page * per_page]
+    goods = goods[(page - 1) * page_size: page * page_size]
     serializer = GoodsSerializer(goods, many=True)
     return Response(data=serializer.data)
 
@@ -72,7 +72,6 @@ def goods_detail(request, id):
 
 @api_view(('GET',))
 def search_list(request):
-    display_num = 7
     search = Search.objects.order_by('click_times')
     serializer = SearchSerializer(search, many=True)
     return Response(data=serializer.data)
@@ -88,7 +87,6 @@ def login(request):
         'authorization_code')
     resp = requests.get(url)
     resp = resp.json()
-    # resp = {'openid': '123', 'session_key': 'test123'} # for test
     if 'errcode' in resp:
         ctx = {'errmsg': resp['errmsg'], 'errcode': resp['errcode']}
         return Response(data=ctx, status=status.HTTP_400_BAD_REQUEST)
@@ -123,8 +121,12 @@ def bill_list(request):
     if not user:
         return Response(data={'errmsg': err_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
-    ctx = {}
-    cart = Cart.objects.filter(user=user, bill__isnull=False)
+    page = int(request.POST.get('page', 1))
+    page_size = int(request.GET.get('page_size', 20))
+
+    ctx = []
+    cart = Cart.objects.filter(user=user, bill__isnull=False).order_by('-created_time')
+    cart = cart[(page - 1) * page_size: page * page_size]
     serializer = CartSerializer(cart, many=True)
     for item in serializer.data:
         bill_id = item['bill']['id']
@@ -132,17 +134,20 @@ def bill_list(request):
             item['goods']['name'],
             item['price'],
             str(item['num']))
-        if bill_id in ctx:
-            ctx[bill_id]['goods_name_list'].append(goods_name_list)
+
+        for i in range(len(ctx)):
+            if ctx[i]['bill']['id'] == bill_id:
+                ctx[i]['goods_name_list'].append(goods_name_list)
+                break
         else:
-            ctx[bill_id] = {
+            ctx.append({
                 'bill': item['bill'],
                 'cover': {
                     'goods_name': item['goods']['name'],
                     'img': item['goods']['img']
                 },
                 'goods_name_list': [goods_name_list]
-            }
+            })
     return Response(data=ctx)
 
 
@@ -163,9 +168,8 @@ def cart_list(request):
     if not user:
         return Response(data={'errmsg': err_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
-    some_id = request.POST.get('some_id')
+    goods_id_list = request.POST.get('goods_id_list')
     goods_id = request.POST.get('goods_id')
-
     if goods_id:
         cart, created = Cart.objects.get_or_create(
             user=user, goods_id=goods_id, bill__isnull=True)
@@ -174,10 +178,10 @@ def cart_list(request):
             cart.save()
         serializer = CartSerializer(cart)
         return Response(data=serializer.data)
-    elif some_id:
-        some_id = json.loads(some_id)
+    elif goods_id_list:
+        goods_id_list = json.loads(goods_id_list)
         cart = Cart.objects.filter(
-            user=user, pk__in=some_id, bill__isnull=True)
+            user=user, pk__in=goods_id_list, bill__isnull=True)
         serializer = CartSerializer(cart, many=True)
         return Response(data=serializer.data)
     else:
@@ -212,19 +216,14 @@ def pay(request):
 
     cart_list = request.POST.get('cart_list')
     cart_list = json.loads(cart_list)
+    user_info = request.POST.get('user_info')
+    user_info = json.loads(user_info)
 
     total = {
         'payable': 0,
         'num': 0,
         'discount': 0,
     }
-    userInfo = {
-        'id': 0,
-        'addr': '',
-        'phone': '',
-        'name': ''
-    }
-
     bill = Bill()
     bill.save()
     bill = Bill.objects.latest('id')
@@ -241,21 +240,16 @@ def pay(request):
             float(cart.price) - float(cart.discount)
         total['num'] += cart.num
 
-        userInfo['id'] = data['user']['id']
-        userInfo['addr'] = data['user']['addr']
-        userInfo['phone'] = data['user']['phone']
-        userInfo['name'] = data['user']['name']
-
     bill.payable = total['payable']
     bill.num = total['num']
     bill.discount = total['discount']
-    bill.sn = bill.t.strftime("%Y%m%d%H%M%S") + str(bill.id).zfill(4)
+    bill.sn = bill.created_time.strftime(
+        "%Y%m%d%H%M%S") + str(bill.id).zfill(4)
     bill.save()
 
-    user = User.objects.get(pk=userInfo['id'])
-    user.addr = userInfo['addr']
-    user.phone = userInfo['phone']
-    user.name = userInfo['name']
+    user.addr = user_info['addr']
+    user.phone = user_info['phone']
+    user.name = user_info['name']
     user.save()
 
     serializers = BillSerializer(bill)

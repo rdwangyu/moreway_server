@@ -16,7 +16,7 @@ class Banner(models.Model):
     img = models.CharField(default='')
     url = models.CharField(default='')
     remark = models.TextField(default='')
-    t = models.DateTimeField(auto_now_add=True)
+    created_time = models.DateTimeField(auto_now_add=True)
 
 
 class Goods(models.Model):
@@ -32,7 +32,7 @@ class Goods(models.Model):
     img = models.CharField(default='')
     label = models.IntegerField(default=0) # 11111101
     remark = models.TextField(default='')
-    t = models.DateTimeField(auto_now_add=True)
+    created_time = models.DateTimeField(auto_now_add=True)
 
 
 class User(models.Model):
@@ -45,14 +45,14 @@ class User(models.Model):
     phone = models.CharField(default='')
     addr = models.CharField(default='')
     last_login = models.DateTimeField(auto_now=True)
-    created = models.DateTimeField(auto_now_add=True)
+    created_time = models.DateTimeField(auto_now_add=True)
 
 
 class Search(models.Model):
     text = models.CharField(default='')
     click_times = models.BigIntegerField(default=0)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    updated = models.DateTimeField(auto_now=True)
+    updated_time = models.DateTimeField(auto_now=True)
 
 
 class Bill(models.Model):
@@ -63,14 +63,14 @@ class Bill(models.Model):
     pay_platform = models.IntegerField(default=0)
     status = models.IntegerField(default=0)
     remark = models.TextField(default='')
-    created = models.DateTimeField(auto_now_add=True)
+    created_time = models.DateTimeField(auto_now_add=True)
 
 
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE)
-    num = models.IntegerField(default=0)
+    num = models.IntegerField(default=1)
     price = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=7, decimal_places=2, default=0)
-    bill = models.ForeignKey(Bill, default=0, on_delete=models.CASCADE)
-    created = models.DateTimeField(auto_now_add=True)
+    bill = models.ForeignKey(Bill, null=True, on_delete=models.CASCADE)
+    created_time = models.DateTimeField(auto_now_add=True)
