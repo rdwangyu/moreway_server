@@ -86,9 +86,31 @@ def settle(request):
         bill.payable = total['payable']
         bill.num = total['num']
         bill.discount = total['discount']
-        bill.sn = bill.created_time.strftime("%Y%m%d%H%M%S") + str(bill.id).zfill(4)
+        bill.sn = bill.created_time.strftime(
+            "%Y%m%d%H%M%S") + str(bill.id).zfill(4)
         bill.remark = '后台自动下单'
         bill.save()
 
         serializer = BillSerializer(bill)
         return Response(data=serializer.data)
+
+
+@api_view(('GET',))
+def bill_list(request):
+    page_size = request.GET.get('page_size', 50)
+    bill = Bill.objects.all().order_by('-created_time')
+    bill = bill[0:page_size]
+    serializer = BillSerializer(bill, many=True)
+    return Response(data=serializer.data)
+
+@api_view(('GET', 'PUT'))
+def bill_detail(request, id):
+    try:
+        bill = Bill.objects.get(pk=id)
+        if request.method == 'PUT':
+            bill.status = request.POST.get('status')
+            bill.save()
+        serializer = BillSerializer(bill)
+        return Response(data=serializer.data)
+    except Bill.DoesNotExist:
+        return Response(data={'errmsg': '数据异常, 账单不存在' + str(id)})

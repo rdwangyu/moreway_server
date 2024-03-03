@@ -13,8 +13,8 @@ class Category(models.Model):
 
 
 class Banner(models.Model):
-    img = models.CharField(default='')
-    url = models.CharField(default='')
+    cover = models.CharField(default='')
+    poster = models.CharField(default='')
     remark = models.TextField(default='')
     created_time = models.DateTimeField(auto_now_add=True)
 
@@ -29,7 +29,8 @@ class Goods(models.Model):
         max_digits=7, decimal_places=2, default=0)
     category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
     brand = models.CharField(default='')
-    img = models.CharField(default='')
+    thumbnail = models.TextField(default='')
+    poster = models.TextField(default='')
     label = models.IntegerField(default=0) # 11111101
     remark = models.TextField(default='')
     created_time = models.DateTimeField(auto_now_add=True)

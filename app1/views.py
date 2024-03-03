@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.utils import timezone
-from django.db.models import F
+from django.db.models import Sum
 import json
 import requests
 import hashlib
@@ -29,9 +29,19 @@ def category_detail(request, name):
 
 @api_view(('GET',))
 def banner_list(request):
-    banner = Banner.objects.values('id', 'img', 'url', 'remark')
+    banner = Banner.objects.all()
     serializer = BannerSerializer(banner, many=True)
     return Response(data=serializer.data)
+
+
+@api_view(('GET',))
+def banner_detail(request, id):
+    try:
+        banner = Banner.objects.get(pk=id)
+        serializer = BannerSerializer(banner)
+        return Response(data=serializer.data)
+    except Banner.DoesNotExist:
+        return Response(data={'errmsg': '无数据'})
 
 
 @api_view(('GET',))
@@ -101,7 +111,7 @@ def login(request):
             "login_session": session,
             "login_expired": timezone.now() + timedelta(days=3)})
     serializer = UserSerializer(user)
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
+    return Response(data=serializer.data)
 
 
 def _check_session(session):
@@ -125,7 +135,8 @@ def bill_list(request):
     page_size = int(request.GET.get('page_size', 20))
 
     ctx = []
-    cart = Cart.objects.filter(user=user, bill__isnull=False).order_by('-created_time')
+    cart = Cart.objects.filter(
+        user=user, bill__isnull=False).order_by('-created_time')
     cart = cart[(page - 1) * page_size: page * page_size]
     serializer = CartSerializer(cart, many=True)
     for item in serializer.data:
@@ -144,7 +155,7 @@ def bill_list(request):
                 'bill': item['bill'],
                 'cover': {
                     'goods_name': item['goods']['name'],
-                    'img': item['goods']['img']
+                    'img': item['goods']['thumbnail'][0]
                 },
                 'goods_name_list': [goods_name_list]
             })
@@ -188,6 +199,15 @@ def cart_list(request):
         cart = Cart.objects.filter(user=user, bill__isnull=True)
         serializer = CartSerializer(cart, many=True)
         return Response(data=serializer.data)
+    
+@api_view(('POST',))
+def cart_info(request):
+    user, err_msg = _check_session(request.POST.get('session', ''))
+    cnt = 0
+    if user:
+        cart = Cart.objects.filter(user=user, bill__isnull=True).aggregate(Sum('num'))
+        cnt = cart['num__sum'] if cart['num__sum'] else 0
+    return Response(data={'cnt': cnt})
 
 
 @api_view(('PUT', 'DELETE'))
