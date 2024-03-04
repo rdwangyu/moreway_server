@@ -23,15 +23,15 @@ class Goods(models.Model):
     name = models.CharField(default='')
     barcode = models.CharField(default='')
     num = models.IntegerField(default=0)
+    category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
     retail_price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0)
     cost_price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0)
-    category = models.ForeignKey(Category, on_delete=models.DO_NOTHING)
+    label = models.IntegerField(default=0) # 11111101
     brand = models.CharField(default='')
     thumbnail = models.TextField(default='')
     poster = models.TextField(default='')
-    label = models.IntegerField(default=0) # 11111101
     remark = models.TextField(default='')
     created_time = models.DateTimeField(auto_now_add=True)
 
