@@ -18,12 +18,13 @@ def category_list(request):
 def goods_detail(request, barcode):
     if request.method == 'POST':
         category = Category.objects.get(pk=request.POST.get('category_id'))
+        name = request.POST.get('name')
         num = request.POST.get('num')
         retail_price = request.POST.get('retail_price')
         cost_price = request.POST.get('cost_price')
         brand = request.POST.get('brand')
         remark = request.POST.get('remark')
-        goods = Goods(barcode=barcode, num=num, retail_price=retail_price,
+        goods = Goods(barcode=barcode, name=name, num=num, retail_price=retail_price,
                       cost_price=cost_price, category=category,
                       brand=brand, remark=remark)
         goods.save()
@@ -102,6 +103,7 @@ def bill_list(request):
     bill = bill[0:page_size]
     serializer = BillSerializer(bill, many=True)
     return Response(data=serializer.data)
+
 
 @api_view(('GET', 'PUT'))
 def bill_detail(request, id):
