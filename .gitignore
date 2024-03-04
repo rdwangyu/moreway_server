@@ -1,5 +1,5 @@
 migrations
-./static
+static/
 moreway_server/settings.py
 __pycache__
 
