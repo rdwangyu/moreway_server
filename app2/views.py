@@ -1,9 +1,10 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework import status
 import json
+from datetime import date, datetime, timezone, timedelta
 from app1.models import *
 from app1.serializers import *
+from django.db.models import Sum
 
 
 @api_view(('GET',))
@@ -90,6 +91,7 @@ def settle(request):
         bill.sn = bill.created_time.strftime(
             "%Y%m%d%H%M%S") + str(bill.id).zfill(4)
         bill.remark = '后台自动下单'
+        bill.status = 3
         bill.save()
 
         serializer = BillSerializer(bill)
@@ -99,7 +101,7 @@ def settle(request):
 @api_view(('GET',))
 def bill_list(request):
     page_size = request.GET.get('page_size', 50)
-    bill = Bill.objects.all().order_by('-created_time')
+    bill = Bill.objects.all().order_by('status', '-created_time')
     bill = bill[0:page_size]
     serializer = BillSerializer(bill, many=True)
     return Response(data=serializer.data)
@@ -112,7 +114,43 @@ def bill_detail(request, id):
         if request.method == 'PUT':
             bill.status = request.POST.get('status')
             bill.save()
-        serializer = BillSerializer(bill)
+        cart = Cart.objects.filter(bill=bill)
+        if not cart:
+            return Response(data={'errmsg': '数据异常, 账单商品数据缺失' + str(id)})
+        serializer = CartSerializer(cart, many=True)
         return Response(data=serializer.data)
     except Bill.DoesNotExist:
         return Response(data={'errmsg': '数据异常, 账单不存在' + str(id)})
+
+
+@api_view(('GET',))
+def bill_stat(request):
+    bill = Bill.objects.all()
+
+    today = date.today()
+    this_week = today - timedelta(today.weekday())
+    last_week = this_week - timedelta(weeks=1)
+    this_month = today - timedelta(today.day) + timedelta(days=1)
+    this_quarter = datetime(
+        today.year, ((today.month - 1) // 3 + 1) * 3 - 2, 1)
+
+    total_today = bill.filter(
+        created_time__gte=today).aggregate(Sum('payable'))
+    total_this_week = bill.filter(
+        created_time__gte=this_week).aggregate(Sum('payable'))
+    total_last_week = bill.filter(
+        created_time__gte=last_week, created_time__lt=this_week).aggregate(Sum('payable'))
+    total_this_month = bill.filter(
+        created_time__gte=this_month).aggregate(Sum('payable'))
+    total_this_quarter = bill.filter(
+        created_time__gte=this_quarter).aggregate(Sum('payable'))
+
+    ctx = {
+        'today': total_today['payable__sum'],
+        'this_week': total_this_week['payable__sum'],
+        'last_week': total_last_week['payable__sum'],
+        'this_month': total_this_month['payable__sum'],
+        'this_quarter': total_this_quarter['payable__sum'],
+    }
+
+    return Response(data=ctx)
