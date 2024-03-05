@@ -18,40 +18,47 @@ def category_list(request):
 @api_view(('GET', 'POST', 'PUT'))
 def goods_detail(request, barcode):
     if request.method == 'POST':
-        category = Category.objects.get(pk=request.POST.get('category_id'))
-        name = request.POST.get('name')
-        num = request.POST.get('num')
-        retail_price = request.POST.get('retail_price')
-        cost_price = request.POST.get('cost_price')
-        brand = request.POST.get('brand')
-        remark = request.POST.get('remark')
-        goods = Goods(barcode=barcode, name=name, num=num, retail_price=retail_price,
-                      cost_price=cost_price, category=category,
-                      brand=brand, remark=remark)
-        goods.save()
-        serializer = GoodsSerializer(goods)
-        return Response(data=serializer.data)
+        try:
+            data = json.loads(request.body)
+            category = Category.objects.get(pk=int(data['category_id']))
+            name = data['name']
+            num = int(data['num'])
+            retail_price = data['retail_price']
+            cost_price = data['cost_price']
+            brand = data['brand']
+            remark = data['remark']
+            goods = Goods(barcode=barcode, name=name, num=num, retail_price=retail_price,
+                          cost_price=cost_price, category=category,
+                          brand=brand, remark=remark)
+            goods.save()
+            serializer = GoodsSerializer(goods)
+            return Response(data=serializer.data)
+        except Category.DoesNotExist:
+            return Response(data={'errmsg': '分类不存在'})
 
     elif request.method == 'PUT':
-        goods = Goods.objects.get(barcode=barcode)
-        goods.name = request.POST.get('name')
-        goods.num = request.POST.get('num')
-        goods.retail_price = request.POST.get('retail_price')
-        goods.cost_price = request.POST.get('cost_price')
-        goods.category_id = request.POST.get('category_id')
-        goods.brand = request.POST.get('brand')
-        goods.remark = request.POST.get('remark')
-        goods.save()
-        serializer = GoodsSerializer(goods)
-        return Response(data=serializer.data)
-
+        try:
+            data = json.loads(request.body)
+            goods = Goods.objects.get(barcode=barcode)
+            goods.name = data['name']
+            goods.num = data['num']
+            goods.retail_price = data['retail_price']
+            goods.cost_price = data['cost_price']
+            goods.category_id = data['category_id']
+            goods.brand = data['brand']
+            goods.remark = data['remark']
+            goods.save()
+            serializer = GoodsSerializer(goods)
+            return Response(data=serializer.data)
+        except Goods.DoesNotExist:
+            return Response(data={'errmsg': '商品不存在, 数据异常' + barcode})
     elif request.method == 'GET':
         try:
             goods = Goods.objects.get(barcode=barcode)
             serializer = GoodsSerializer(goods)
             return Response(data=serializer.data)
         except Goods.DoesNotExist:
-            return Response(data={'errmsg': '无数据'})
+            return Response(data={'errmsg': '商品不存在'})
 
 
 @api_view(('POST',))
