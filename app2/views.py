@@ -128,7 +128,7 @@ def bill_stat(request):
     bill = Bill.objects.all()
 
     today = date.today()
-    this_week = today - timedelta(today.weekday())
+    this_week = today - timedelta(days=today.weekday())
     last_week = this_week - timedelta(weeks=1)
     this_month = today - timedelta(today.day) + timedelta(days=1)
     this_quarter = datetime(

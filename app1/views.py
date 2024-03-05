@@ -109,7 +109,8 @@ def login(request):
         defaults={
             "wx_openid": openid,
             "login_session": session,
-            "login_expired": timezone.now() + timedelta(days=3)})
+            "login_expired": timezone.now() + timedelta(days=3)
+        })
     serializer = UserSerializer(user)
     return Response(data=serializer.data)
 
