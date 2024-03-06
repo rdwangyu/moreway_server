@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Category(models.Model):
     class_0 = models.CharField(default='')
     class_1 = models.CharField(default='')
@@ -39,7 +38,7 @@ class Goods(models.Model):
 class User(models.Model):
     wx_openid = models.CharField(default='')
     login_session = models.CharField(default='')
-    login_expired = models.DateTimeField(auto_now_add=True)
+    login_expired = models.DateTimeField(default='1970-01-01')
     name = models.CharField(default='')
     nickname = models.CharField(default='')
     age = models.IntegerField(default=0)
