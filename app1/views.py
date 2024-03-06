@@ -109,7 +109,7 @@ def login(request):
         defaults={
             "wx_openid": openid,
             "login_session": session,
-            "login_expired": timezone.now() + timedelta(days=3)
+            "login_expired": timezone.now() + timedelta(days=30)
         })
     serializer = UserSerializer(user)
     return Response(data=serializer.data)
@@ -119,8 +119,6 @@ def _check_session(session):
     try:
         user = User.objects.get(login_session=session,
                                 login_expired__gte=timezone.now())
-        user.login_expired += timedelta(days=3)
-        user.save()
         return (user, '')
     except User.DoesNotExist:
         return (None, '登录超时')
