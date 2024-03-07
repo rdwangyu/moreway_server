@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import json
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta
 from app1.models import *
 from app1.serializers import *
 from django.db.models import Sum
@@ -73,6 +73,7 @@ def settle(request):
         Bill().save()
         bill = Bill.objects.latest('id')
         try:
+            user = User.objects.get(wx_openid='oQIt866FNnOo7E-oSiSGG9D4MH5U')
             for i in range(len(cart_list)):
                 id = cart_list[i]['id']
                 price = cart_list[i]['retail_price']
@@ -82,7 +83,7 @@ def settle(request):
                 goods.num -= num
                 goods.save()
 
-                cart = Cart(user_id=1, goods=goods,
+                cart = Cart(user=user, goods=goods,
                             num=num, price=price, bill=bill)
                 cart.save()
 
@@ -91,6 +92,12 @@ def settle(request):
                 total['num'] += num
         except Goods.DoesNotExist:
             return Response(data={'errmsg': '数据异常, 商品不存在' + str(id)})
+        except User.DoesNotExist:
+            return Response(data={'errmsg': '数据异常, 管理员账号不存在'})
+        except User.MultipleObjectsReturned:
+            return Response(data={'errmsg': '数据异常, 管理员账号不唯一'})
+
+
 
         bill.payable = total['payable']
         bill.num = total['num']
