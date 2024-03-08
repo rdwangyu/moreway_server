@@ -54,7 +54,7 @@ def goods_list(request):
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
 
-    goods = Goods.objects.all().order_by('-created_time')
+    goods = Goods.objects.filter(on_sale=True).order_by('-created_time')
     if class_1 and class_0:
         goods = goods.filter(category__class_0=class_0,
                              category__class_1=class_1)

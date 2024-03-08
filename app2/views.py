@@ -27,9 +27,12 @@ def goods_detail(request, barcode):
             cost_price = data['cost_price']
             brand = data['brand']
             remark = data['remark']
+            thumbnail = data['thumbnail']
+            poster = data['poster']
             goods = Goods(barcode=barcode, name=name, num=num, retail_price=retail_price,
                           cost_price=cost_price, category=category,
-                          brand=brand, remark=remark)
+                          brand=brand, remark=remark, thumbnail=thumbnail,
+                          poster=poster, on_sale=True)
             goods.save()
             serializer = GoodsSerializer(goods)
             return Response(data=serializer.data)
@@ -40,18 +43,25 @@ def goods_detail(request, barcode):
         try:
             data = json.loads(request.body)
             goods = Goods.objects.get(barcode=barcode)
+            category = Category.objects.get(pk=int(data['category_id']))
             goods.name = data['name']
             goods.num = data['num']
             goods.retail_price = data['retail_price']
             goods.cost_price = data['cost_price']
-            goods.category_id = data['category_id']
+            goods.category = category
             goods.brand = data['brand']
             goods.remark = data['remark']
+            goods.thumbnail = data['thumbnail']
+            goods.poster = data['poster']
+            goods.on_sale = True
             goods.save()
             serializer = GoodsSerializer(goods)
             return Response(data=serializer.data)
         except Goods.DoesNotExist:
             return Response(data={'errmsg': '商品不存在, 数据异常' + barcode})
+        except Category.DoesNotExist:
+            return Response(data={'errmsg': '分类不存在'})
+
     elif request.method == 'GET':
         try:
             goods = Goods.objects.get(barcode=barcode)
@@ -97,8 +107,6 @@ def settle(request):
         except User.MultipleObjectsReturned:
             return Response(data={'errmsg': '数据异常, 管理员账号不唯一'})
 
-
-
         bill.payable = total['payable']
         bill.num = total['num']
         bill.discount = total['discount']
@@ -126,7 +134,7 @@ def bill_detail(request, id):
     try:
         bill = Bill.objects.get(pk=id)
         if request.method == 'PUT':
-            bill.status = request.POST.get('status')
+            bill.status = json.loads(request.body)['status']
             bill.save()
         cart = Cart.objects.filter(bill=bill)
         if not cart:

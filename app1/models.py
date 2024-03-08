@@ -32,6 +32,7 @@ class Goods(models.Model):
     thumbnail = models.TextField(default='')
     poster = models.TextField(default='')
     remark = models.TextField(default='')
+    on_sale = models.BooleanField(default=False)
     created_time = models.DateTimeField(auto_now_add=True)
 
 

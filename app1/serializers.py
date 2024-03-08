@@ -34,7 +34,7 @@ class GoodsSerializer(serializers.ModelSerializer):
         return obj.thumbnail.split(';')
 
     def get_poster(self, obj):
-        return obj.thumbnail.split(';')
+        return obj.poster.split(';')
 
     def get_created_time(self, obj):
         return timezone.localtime(obj.created_time).strftime("%Y-%m-%d %H:%M:%S")
