@@ -20,6 +20,7 @@ def goods_detail(request, barcode):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            print('POST data...', data)
             category = Category.objects.get(pk=int(data['category_id']))
             name = data['name']
             num = int(data['num'])
@@ -27,12 +28,14 @@ def goods_detail(request, barcode):
             cost_price = data['cost_price']
             brand = data['brand']
             remark = data['remark']
-            thumbnail = data['thumbnail']
-            poster = data['poster']
-            goods = Goods(barcode=barcode, name=name, num=num, retail_price=retail_price,
-                          cost_price=cost_price, category=category,
-                          brand=brand, remark=remark, thumbnail=thumbnail,
-                          poster=poster, on_sale=True)
+            thumbnail = ';'.join(data['thumbnail'])
+            poster = ';'.join(data['poster'])
+            on_sale = data['on_sale']
+            goods = Goods(barcode=barcode, name=name, num=num,
+                          retail_price=retail_price, cost_price=cost_price,
+                          category=category, brand=brand, remark=remark,
+                          thumbnail=thumbnail, on_sale=on_sale,
+                          poster=poster)
             goods.save()
             serializer = GoodsSerializer(goods)
             return Response(data=serializer.data)
@@ -42,6 +45,7 @@ def goods_detail(request, barcode):
     elif request.method == 'PUT':
         try:
             data = json.loads(request.body)
+            print('PUT data...', data)
             goods = Goods.objects.get(barcode=barcode)
             category = Category.objects.get(pk=int(data['category_id']))
             goods.name = data['name']
@@ -51,9 +55,9 @@ def goods_detail(request, barcode):
             goods.category = category
             goods.brand = data['brand']
             goods.remark = data['remark']
-            goods.thumbnail = data['thumbnail']
-            goods.poster = data['poster']
-            goods.on_sale = True
+            goods.thumbnail = ';'.join(data['thumbnail'])
+            goods.poster = ';'.join(data['poster'])
+            goods.on_sale = data['on_sale']
             goods.save()
             serializer = GoodsSerializer(goods)
             return Response(data=serializer.data)
