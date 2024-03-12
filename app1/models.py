@@ -33,6 +33,7 @@ class Goods(models.Model):
     poster = models.TextField(default='')
     remark = models.TextField(default='')
     on_sale = models.BooleanField(default=False)
+    updated_time = models.DateTimeField(auto_now=True)
     created_time = models.DateTimeField(auto_now_add=True)
 
 

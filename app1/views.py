@@ -2,7 +2,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.utils import timezone
-from django.db.models import Sum
+from django.db.models.functions import Concat
+from django.db.models import Sum, Q
 import json
 import requests
 import hashlib
@@ -54,7 +55,7 @@ def goods_list(request):
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
 
-    goods = Goods.objects.filter(on_sale=True).order_by('-created_time')
+    goods = Goods.objects.filter(on_sale=True).order_by('-updated_time')
     if class_1 and class_0:
         goods = goods.filter(category__class_0=class_0,
                              category__class_1=class_1)
@@ -62,7 +63,10 @@ def goods_list(request):
         goods_id_list = json.loads(goods_id_list)
         goods = goods.filter(id__in=goods_id_list)
     elif keywords:
-        goods = goods.filter(name__contains=keywords)
+        goods = goods.annotate(category_full_name=Concat('category__class_0', 'category__class_1',
+                                                         'category__ext_0', 'category__ext_1', 'category__ext_2', 'category__ext_3', 'category__ext_4'))
+        goods = goods.filter(
+            Q(name__contains=keywords) | Q(category_full_name__contains=keywords))
     elif label:
         goods = goods.filter(label=label)
     goods = goods[(page - 1) * page_size: page * page_size]
@@ -198,13 +202,15 @@ def cart_list(request):
         cart = Cart.objects.filter(user=user, bill__isnull=True)
         serializer = CartSerializer(cart, many=True)
         return Response(data=serializer.data)
-    
+
+
 @api_view(('POST',))
 def cart_info(request):
     user, err_msg = _check_session(request.POST.get('session', ''))
     cnt = 0
     if user:
-        cart = Cart.objects.filter(user=user, bill__isnull=True).aggregate(Sum('num'))
+        cart = Cart.objects.filter(
+            user=user, bill__isnull=True).aggregate(Sum('num'))
         cnt = cart['num__sum'] if cart['num__sum'] else 0
     return Response(data={'cnt': cnt})
 
@@ -234,9 +240,11 @@ def pay(request):
         return Response(data={'errmsg': err_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
     cart_list = request.POST.get('cart_list')
-    cart_list = json.loads(cart_list)
     user_info = request.POST.get('user_info')
+    bill_info = request.POST.get('bill_info')
+    cart_list = json.loads(cart_list)
     user_info = json.loads(user_info)
+    bill_info = json.loads(bill_info)
 
     total = {
         'payable': 0,
@@ -264,6 +272,7 @@ def pay(request):
     bill.discount = total['discount']
     bill.sn = bill.created_time.strftime(
         "%Y%m%d%H%M%S") + str(bill.id).zfill(4)
+    bill.remark = bill_info['remark']
     bill.save()
 
     user.addr = user_info['addr']
