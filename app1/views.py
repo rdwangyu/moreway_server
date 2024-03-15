@@ -14,24 +14,25 @@ from .serializers import *
 
 @api_view(('GET',))
 def category_list(request):
-    top_category = Category.objects.values(
-        'id', 'class_0').distinct('class_0')
-    serializer = CategorySerializer(top_category, many=True)
+    top_category = Category.objects.all().distinct('class_0')
+    serializer = CategorySerializer(
+        top_category, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
 @api_view(('GET',))
 def category_detail(request, name):
-    sub_category = Category.objects.filter(class_0=name).values(
-        'id', 'class_0', 'class_1', 'img').distinct('class_1')
-    serializer = CategorySerializer(sub_category, many=True)
+    sub_category = Category.objects.filter(class_0=name).distinct('class_1')
+    serializer = CategorySerializer(
+        sub_category, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
 @api_view(('GET',))
 def banner_list(request):
     banner = Banner.objects.all()
-    serializer = BannerSerializer(banner, many=True)
+    serializer = BannerSerializer(
+        banner, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
@@ -39,7 +40,7 @@ def banner_list(request):
 def banner_detail(request, id):
     try:
         banner = Banner.objects.get(pk=id)
-        serializer = BannerSerializer(banner)
+        serializer = BannerSerializer(banner, context={'request': request})
         return Response(data=serializer.data)
     except Banner.DoesNotExist:
         return Response(data={'errmsg': '无数据'})
@@ -66,9 +67,9 @@ def goods_list(request):
         goods = goods.annotate(category_full_name=Concat('category__class_0', 'category__class_1',
                                                          'category__ext_0', 'category__ext_1', 'category__ext_2', 'category__ext_3', 'category__ext_4'))
         goods = goods.filter(
-            Q(name__contains=keywords)
-            | Q(category_full_name__contains=keywords)
-            | Q(barcode__contains=keywords))
+            Q(name__icontains=keywords)
+            | Q(category_full_name__icontains=keywords)
+            | Q(barcode__icontains=keywords))
     elif label:
         goods = goods.filter(label=label)
     goods = goods[(page - 1) * page_size: page * page_size]
@@ -103,7 +104,7 @@ def goods_detail(request, id):
             if 'brand' in param:
                 goods.brand = param['brand']
             if 'category_id' in param:
-                goods.category_id = param['category_id'] 
+                goods.category_id = param['category_id']
             if 'on_sale' in param:
                 goods.on_sale = param['on_sale'] == 'true'
             goods.save()
@@ -113,10 +114,12 @@ def goods_detail(request, id):
         # todo 改成返回200+errmsg
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 @api_view(('GET',))
 def search_list(request):
     search = Search.objects.order_by('click_times')
-    serializer = SearchSerializer(search, many=True)
+    serializer = SearchSerializer(
+        search, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
@@ -144,7 +147,7 @@ def login(request):
             'login_session': session,
             'login_expired': timezone.now() + timedelta(days=30)
         })
-    serializer = UserSerializer(user)
+    serializer = UserSerializer(user, context={'request': request})
     return Response(data=serializer.data)
 
 
@@ -311,7 +314,7 @@ def pay(request):
     user.name = user_info['name']
     user.save()
 
-    serializers = BillSerializer(bill)
+    serializers = BillSerializer(bill, context={'request': request})
     return Response(data=serializers.data)
 
 
@@ -323,5 +326,5 @@ def user_detail(request):
 
     user.nickname = request.POST.get('nickname', '')
     user.save()
-    serializers = UserSerializer(user)
+    serializers = UserSerializer(user, context={'request': request})
     return Response(data=serializers.data)

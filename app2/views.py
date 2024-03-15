@@ -1,17 +1,20 @@
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 import json
-from datetime import date, datetime, timedelta
 from app1.models import *
 from app1.serializers import *
 from django.db.models import Sum
+from django.utils import timezone
+from datetime import timedelta, datetime
+import pytz
 
 
 @api_view(('GET',))
 def category_list(request):
     category = Category.objects.order_by(
         'class_0', 'class_1', 'ext_0', 'ext_1', 'ext_2', 'ext_3', 'ext_4')
-    serializer = CategorySerializer(category, many=True)
+    serializer = CategorySerializer(
+        category, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
@@ -19,8 +22,9 @@ def category_list(request):
 def goods_detail(request, barcode):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            print('POST data...', data)
+            data = request.POST
+            files = request.FILES
+            print('POST data...', data, files)
             category = Category.objects.get(pk=int(data['category_id']))
             name = data['name']
             num = int(data['num'])
@@ -28,24 +32,26 @@ def goods_detail(request, barcode):
             cost_price = data['cost_price']
             brand = data['brand']
             remark = data['remark']
-            thumbnail = ';'.join(data['thumbnail'])
-            poster = ';'.join(data['poster'])
             on_sale = data['on_sale']
             goods = Goods(barcode=barcode, name=name, num=num,
                           retail_price=retail_price, cost_price=cost_price,
                           category=category, brand=brand, remark=remark,
-                          thumbnail=thumbnail, on_sale=on_sale,
-                          poster=poster)
+                          on_sale=on_sale)
+            if 'thumb' in files:
+                goods.thumb = files['thumb']
+            if 'poster' in files:
+                goods.poster = files['poster']
             goods.save()
-            serializer = GoodsSerializer(goods)
+            serializer = GoodsSerializer(goods, context={'request': request})
             return Response(data=serializer.data)
         except Category.DoesNotExist:
             return Response(data={'errmsg': '分类不存在'})
 
     elif request.method == 'PUT':
         try:
-            data = json.loads(request.body)
-            print('PUT data...', data)
+            data = request.POST
+            files = request.FILES
+            print('PUT data...', data, files)
             goods = Goods.objects.get(barcode=barcode)
             category = Category.objects.get(pk=int(data['category_id']))
             goods.name = data['name']
@@ -55,11 +61,13 @@ def goods_detail(request, barcode):
             goods.category = category
             goods.brand = data['brand']
             goods.remark = data['remark']
-            goods.thumbnail = ';'.join(data['thumbnail'])
-            goods.poster = ';'.join(data['poster'])
             goods.on_sale = data['on_sale']
+            if 'thumb' in files:
+                goods.thumb = files['thumb']
+            if 'poster' in files:
+                goods.poster = files['poster']
             goods.save()
-            serializer = GoodsSerializer(goods)
+            serializer = GoodsSerializer(goods, context={'request': request})
             return Response(data=serializer.data)
         except Goods.DoesNotExist:
             return Response(data={'errmsg': '商品不存在, 数据异常' + barcode})
@@ -69,7 +77,7 @@ def goods_detail(request, barcode):
     elif request.method == 'GET':
         try:
             goods = Goods.objects.get(barcode=barcode)
-            serializer = GoodsSerializer(goods)
+            serializer = GoodsSerializer(goods, context={'request': request})
             return Response(data=serializer.data)
         except Goods.DoesNotExist:
             return Response(data={'errmsg': '商品不存在'})
@@ -120,7 +128,7 @@ def settle(request):
         bill.status = 3
         bill.save()
 
-        serializer = BillSerializer(bill)
+        serializer = BillSerializer(bill, context={'request': request})
         return Response(data=serializer.data)
 
 
@@ -129,7 +137,7 @@ def bill_list(request):
     page_size = request.GET.get('page_size', 50)
     bill = Bill.objects.all().order_by('status', '-created_time')
     bill = bill[0:page_size]
-    serializer = BillSerializer(bill, many=True)
+    serializer = BillSerializer(bill, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
@@ -138,12 +146,13 @@ def bill_detail(request, id):
     try:
         bill = Bill.objects.get(pk=id)
         if request.method == 'PUT':
-            bill.status = json.loads(request.body)['status']
+            bill.status = request.POST['status']
             bill.save()
         cart = Cart.objects.filter(bill=bill)
         if not cart:
             return Response(data={'errmsg': '数据异常, 账单商品数据缺失' + str(id)})
-        serializer = CartSerializer(cart, many=True)
+        serializer = CartSerializer(
+            cart, many=True, context={'request': request})
         return Response(data=serializer.data)
     except Bill.DoesNotExist:
         return Response(data={'errmsg': '数据异常, 账单不存在' + str(id)})
@@ -153,12 +162,12 @@ def bill_detail(request, id):
 def bill_stat(request):
     bill = Bill.objects.all()
 
-    today = date.today()
+    today = timezone.localtime().replace(hour=0, minute=0, second=0)
     this_week = today - timedelta(days=today.weekday())
     last_week = this_week - timedelta(weeks=1)
     this_month = today - timedelta(today.day) + timedelta(days=1)
     this_quarter = datetime(
-        today.year, ((today.month - 1) // 3 + 1) * 3 - 2, 1)
+        today.year, ((today.month - 1) // 3 + 1) * 3 - 2, 1, 0, 0, 0, tzinfo=pytz.UTC)
 
     total_today = bill.filter(
         created_time__gte=today).aggregate(Sum('payable'))

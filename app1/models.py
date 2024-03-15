@@ -10,12 +10,12 @@ class Category(models.Model):
     ext_2 = models.CharField(default='')
     ext_3 = models.CharField(default='')
     ext_4 = models.CharField(default='')
-    img = models.CharField(default='')
+    img = models.ImageField(upload_to='category/', default='')
 
 
 class Banner(models.Model):
-    cover = models.CharField(default='')
-    poster = models.CharField(default='')
+    cover = models.ImageField(upload_to='banner/', default='')
+    poster = models.ImageField(upload_to='banner/', default='')
     remark = models.TextField(default='')
     created_time = models.DateTimeField(auto_now_add=True)
 
@@ -31,14 +31,12 @@ class Goods(models.Model):
         max_digits=7, decimal_places=2, default=0)
     label = models.IntegerField(default=0)  # 11111101
     brand = models.CharField(default='')
-    thumbnail = models.TextField(default='')
-    poster = models.TextField(default='')
     remark = models.TextField(default='')
     on_sale = models.BooleanField(default=False)
     updated_time = models.DateTimeField(auto_now=True)
     created_time = models.DateTimeField(auto_now_add=True)
-    thumb = models.ImageField(upload_to='goods/', default='goods/kong.png')
-    poster = models.ImageField(upload_to='goods/', default='goods/kong.png')
+    thumb = models.ImageField(upload_to='goods/', default='')
+    poster = models.ImageField(upload_to='goods/', default='')
 
 
 class User(models.Model):
@@ -50,6 +48,7 @@ class User(models.Model):
     age = models.IntegerField(default=0)
     phone = models.CharField(default='')
     addr = models.CharField(default='')
+    role = models.IntegerField(default=1) # 0 admin 1 user
     last_login = models.DateTimeField(auto_now=True)
     created_time = models.DateTimeField(auto_now_add=True)
 

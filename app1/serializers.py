@@ -4,13 +4,21 @@ from .models import *
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    img = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
         fields = '__all__'
 
+    def get_img(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.img.url)
+
 
 class BannerSerializer(serializers.ModelSerializer):
     created_time = serializers.SerializerMethodField()
+    cover = serializers.SerializerMethodField()
+    poster = serializers.SerializerMethodField()
 
     class Meta:
         model = Banner
@@ -19,11 +27,17 @@ class BannerSerializer(serializers.ModelSerializer):
     def get_created_time(self, obj):
         return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
+    def get_cover(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.cover.url)
+
+    def get_poster(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.poster.url)
+
 
 class GoodsSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
-    thumbnail = serializers.SerializerMethodField()
-    poster = serializers.SerializerMethodField()
     created_time = serializers.SerializerMethodField()
     thumb = serializers.SerializerMethodField()
     poster = serializers.SerializerMethodField()
@@ -32,18 +46,13 @@ class GoodsSerializer(serializers.ModelSerializer):
         model = Goods
         fields = '__all__'
 
-    def get_thumbnail(self, obj):
-        return obj.thumbnail.split(';')
-
-    def get_poster(self, obj):
-        return obj.poster.split(';')
-
     def get_created_time(self, obj):
         return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
     def get_thumb(self, obj):
         request = self.context.get('request')
         return request.build_absolute_uri(obj.thumb.url)
+
     def get_poster(self, obj):
         request = self.context.get('request')
         return request.build_absolute_uri(obj.poster.url)
@@ -71,14 +80,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class BillSerializer(serializers.ModelSerializer):
-    created_time = serializers.SerializerMethodField()
+    # created_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Bill
         fields = '__all__'
 
-    def get_created_time(self, obj):
-        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
+    # def get_created_time(self, obj):
+    #     return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class CartSerializer(serializers.ModelSerializer):
