@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 
 from . import views
 
@@ -17,6 +19,5 @@ urlpatterns = [
     path('carts/cnt', views.cart_info),
     path('carts/<int:id>', views.cart_detail),
     path('pay', views.pay),
-    path('users', views.user_detail),
-
-]
+    path('users', views.user_detail)
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

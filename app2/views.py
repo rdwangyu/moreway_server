@@ -115,7 +115,7 @@ def settle(request):
         bill.num = total['num']
         bill.discount = total['discount']
         bill.sn = bill.created_time.strftime(
-            "%Y%m%d%H%M%S") + str(bill.id).zfill(4)
+            '%Y%m%d%H%M%S') + str(bill.id).zfill(4)
         bill.remark = '后台自动下单'
         bill.status = 3
         bill.save()

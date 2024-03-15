@@ -17,7 +17,7 @@ class BannerSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_created_time(self, obj):
-        return timezone.localtime(obj.created_time).strftime("%Y-%m-%d %H:%M:%S")
+        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class GoodsSerializer(serializers.ModelSerializer):
@@ -25,6 +25,8 @@ class GoodsSerializer(serializers.ModelSerializer):
     thumbnail = serializers.SerializerMethodField()
     poster = serializers.SerializerMethodField()
     created_time = serializers.SerializerMethodField()
+    thumb = serializers.SerializerMethodField()
+    poster = serializers.SerializerMethodField()
 
     class Meta:
         model = Goods
@@ -37,7 +39,14 @@ class GoodsSerializer(serializers.ModelSerializer):
         return obj.poster.split(';')
 
     def get_created_time(self, obj):
-        return timezone.localtime(obj.created_time).strftime("%Y-%m-%d %H:%M:%S")
+        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
+
+    def get_thumb(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.thumb.url)
+    def get_poster(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.poster.url)
 
 
 class SearchSerializer(serializers.ModelSerializer):
@@ -55,10 +64,10 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_created_time(self, obj):
-        return timezone.localtime(obj.created_time).strftime("%Y-%m-%d %H:%M:%S")
+        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
     def get_last_login(self, obj):
-        return timezone.localtime(obj.last_login).strftime("%Y-%m-%d %H:%M:%S")
+        return timezone.localtime(obj.last_login).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class BillSerializer(serializers.ModelSerializer):
@@ -69,7 +78,7 @@ class BillSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_created_time(self, obj):
-        return timezone.localtime(obj.created_time).strftime("%Y-%m-%d %H:%M:%S")
+        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -83,4 +92,4 @@ class CartSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_created_time(self, obj):
-        return timezone.localtime(obj.created_time).strftime("%Y-%m-%d %H:%M:%S")
+        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')

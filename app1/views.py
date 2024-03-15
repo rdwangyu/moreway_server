@@ -7,7 +7,7 @@ from django.db.models import Sum, Q
 import json
 import requests
 import hashlib
-from datetime import timedelta, datetime
+from datetime import timedelta
 from .models import *
 from .serializers import *
 
@@ -66,23 +66,52 @@ def goods_list(request):
         goods = goods.annotate(category_full_name=Concat('category__class_0', 'category__class_1',
                                                          'category__ext_0', 'category__ext_1', 'category__ext_2', 'category__ext_3', 'category__ext_4'))
         goods = goods.filter(
-            Q(name__contains=keywords) | Q(category_full_name__contains=keywords))
+            Q(name__contains=keywords)
+            | Q(category_full_name__contains=keywords)
+            | Q(barcode__contains=keywords))
     elif label:
         goods = goods.filter(label=label)
     goods = goods[(page - 1) * page_size: page * page_size]
-    serializer = GoodsSerializer(goods, many=True)
+    serializer = GoodsSerializer(
+        goods, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
-@api_view(('GET',))
+@api_view(('GET', 'POST'))
 def goods_detail(request, id):
     try:
         goods = Goods.objects.get(pk=id)
-        serializer = GoodsSerializer(goods)
+        if request.method == 'GET':
+            pass
+        elif request.method == 'POST':
+            param = request.POST
+            print(param)
+            if 'thumb' in param:
+                goods.thumb = request.FILES['file']
+            if 'poster' in param:
+                goods.poster = request.FILES['file']
+            if 'name' in param:
+                goods.name = param['name']
+            if 'num' in param:
+                goods.num = param['num']
+            if 'remark' in param:
+                goods.remark = param['remark']
+            if 'cost_price' in param:
+                goods.cost_price = param['cost_price']
+            if 'retail_price' in param:
+                goods.retail_price = param['retail_price']
+            if 'brand' in param:
+                goods.brand = param['brand']
+            if 'category_id' in param:
+                goods.category_id = param['category_id'] 
+            if 'on_sale' in param:
+                goods.on_sale = param['on_sale'] == 'true'
+            goods.save()
+        serializer = GoodsSerializer(goods, context={'request': request})
         return Response(data=serializer.data)
     except Goods.DoesNotExist:
+        # todo 改成返回200+errmsg
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 @api_view(('GET',))
 def search_list(request):
@@ -94,7 +123,7 @@ def search_list(request):
 @api_view(('POST',))
 def login(request):
     wxcode = request.POST.get('wxcode', '')
-    url = "https://api.weixin.qq.com/sns/jscode2session?appid={}&secret={}&js_code={}&grant_type={}".format(
+    url = 'https://api.weixin.qq.com/sns/jscode2session?appid={}&secret={}&js_code={}&grant_type={}'.format(
         'wx2576c4210717a45b',
         '0b673ab2dd780b5f5f64b2f04e311229',
         wxcode,
@@ -111,9 +140,9 @@ def login(request):
     user, created = User.objects.update_or_create(
         wx_openid=openid,
         defaults={
-            "wx_openid": openid,
-            "login_session": session,
-            "login_expired": timezone.now() + timedelta(days=30)
+            'wx_openid': openid,
+            'login_session': session,
+            'login_expired': timezone.now() + timedelta(days=30)
         })
     serializer = UserSerializer(user)
     return Response(data=serializer.data)
@@ -141,10 +170,10 @@ def bill_list(request):
     cart = Cart.objects.filter(
         user=user, bill__isnull=False).order_by('-created_time')
     cart = cart[(page - 1) * page_size: page * page_size]
-    serializer = CartSerializer(cart, many=True)
+    serializer = CartSerializer(cart, many=True, context={'request': request})
     for item in serializer.data:
         bill_id = item['bill']['id']
-        goods_name_list = "{}\t￥{}-------x{}".format(
+        goods_name_list = '{}\t￥{}-------x{}'.format(
             item['goods']['name'],
             item['price'],
             str(item['num']))
@@ -158,7 +187,7 @@ def bill_list(request):
                 'bill': item['bill'],
                 'cover': {
                     'goods_name': item['goods']['name'],
-                    'img': item['goods']['thumbnail'][0]
+                    'img': item['goods']['thumb']
                 },
                 'goods_name_list': [goods_name_list]
             })
@@ -172,7 +201,7 @@ def bill_detail(request, id):
         return Response(data={'errmsg': err_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
     cart = Cart.objects.filter(bill_id=id)
-    serializer = CartSerializer(cart, many=True)
+    serializer = CartSerializer(cart, many=True, context={'request': request})
     return Response(data=serializer.data)
 
 
@@ -190,17 +219,19 @@ def cart_list(request):
         if not created:
             cart.num += 1
             cart.save()
-        serializer = CartSerializer(cart)
+        serializer = CartSerializer(cart, context={'request': request})
         return Response(data=serializer.data)
     elif goods_id_list:
         goods_id_list = json.loads(goods_id_list)
         cart = Cart.objects.filter(
             user=user, pk__in=goods_id_list, bill__isnull=True)
-        serializer = CartSerializer(cart, many=True)
+        serializer = CartSerializer(
+            cart, many=True, context={'request': request})
         return Response(data=serializer.data)
     else:
         cart = Cart.objects.filter(user=user, bill__isnull=True)
-        serializer = CartSerializer(cart, many=True)
+        serializer = CartSerializer(
+            cart, many=True, context={'request': request})
         return Response(data=serializer.data)
 
 
@@ -271,7 +302,7 @@ def pay(request):
     bill.num = total['num']
     bill.discount = total['discount']
     bill.sn = bill.created_time.strftime(
-        "%Y%m%d%H%M%S") + str(bill.id).zfill(4)
+        '%Y%m%d%H%M%S') + str(bill.id).zfill(4)
     bill.remark = bill_info['remark']
     bill.save()
 

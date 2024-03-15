@@ -1,4 +1,6 @@
 from django.db import models
+import os
+
 
 class Category(models.Model):
     class_0 = models.CharField(default='')
@@ -27,7 +29,7 @@ class Goods(models.Model):
         max_digits=7, decimal_places=2, default=0)
     cost_price = models.DecimalField(
         max_digits=7, decimal_places=2, default=0)
-    label = models.IntegerField(default=0) # 11111101
+    label = models.IntegerField(default=0)  # 11111101
     brand = models.CharField(default='')
     thumbnail = models.TextField(default='')
     poster = models.TextField(default='')
@@ -35,6 +37,8 @@ class Goods(models.Model):
     on_sale = models.BooleanField(default=False)
     updated_time = models.DateTimeField(auto_now=True)
     created_time = models.DateTimeField(auto_now_add=True)
+    thumb = models.ImageField(upload_to='goods/', default='goods/kong.png')
+    poster = models.ImageField(upload_to='goods/', default='goods/kong.png')
 
 
 class User(models.Model):
