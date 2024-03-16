@@ -255,16 +255,20 @@ def cart_detail(request, id):
     if not user:
         return Response(data={'errmsg': err_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
-    if request.method == 'PUT':
-        num = request.POST.get('num')
-        cart = Cart.objects.filter(pk=id).update(num=num)
-        ctx = {'msg': '更新成功'}
-        return Response(data=ctx)
-    elif request.method == 'DELETE':
-        cart = Cart.objects.filter(user=user, goods_id=id, bill__isnull=True)
-        cart.delete()
-        ctx = {'msg': '删除成功'}
-        return Response(data=ctx)
+    try:
+        cart = Cart.objects.get(pk=id)
+        if request.method == 'PUT':
+            num = request.POST.get('num')
+            cart.num = num
+            cart.save()
+            ctx = {'msg': '更新成功'}
+            return Response(data=ctx)
+        elif request.method == 'DELETE':
+            cart.delete()
+            ctx = {'msg': '删除成功'}
+            return Response(data=ctx)
+    except Cart.DoesNotExist:
+        return Response(data={'errmsg': '购物车不存在' + str(id)})
 
 
 @api_view(('POST',))
@@ -289,13 +293,23 @@ def pay(request):
     bill.save()
     bill = Bill.objects.latest('id')
     for i in range(len(cart_list)):
-        data = cart_list[i]
-        cart = Cart.objects.get(pk=data['id'])
-        cart.num = data['num']
-        cart.price = data['goods']['retail_price']
-        cart.discount = data['discount']
-        cart.bill = bill
-        cart.save()
+        try:
+            data = cart_list[i]
+            cart = Cart.objects.get(pk=data['id'])
+            cart.num = data['num']
+            cart.goods.num -= data['num']
+            cart.price = data['goods']['retail_price']
+            cart.discount = data['discount']
+            cart.bill = bill
+            cart.save()
+
+            goods = Goods.objects.get(pk=data['goods']['id'])
+            goods.num -= data['num']
+            goods.save()
+        except Cart.DoesNotExist:
+            return Response(data={'errmsg': '购物车不存在' + str(data['id'])})
+        except Goods.DoesNotExist:
+            return Response(data={'errmsg': '商品不存在' + str(data['goods']['id'])})
 
         total['payable'] += float(cart.num) * \
             float(cart.price) - float(cart.discount)
