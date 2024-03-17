@@ -80,14 +80,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class BillSerializer(serializers.ModelSerializer):
-    # created_time = serializers.SerializerMethodField()
+    created_time = serializers.SerializerMethodField()
 
     class Meta:
         model = Bill
         fields = '__all__'
 
-    # def get_created_time(self, obj):
-    #     return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
+    def get_created_time(self, obj):
+        return timezone.localtime(obj.created_time).strftime('%Y-%m-%d %H:%M:%S')
 
 
 class CartSerializer(serializers.ModelSerializer):

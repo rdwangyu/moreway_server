@@ -56,10 +56,10 @@ def goods_list(request):
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
 
-    goods = Goods.objects.filter(on_sale=True).order_by('-updated_time')
+    goods = Goods.objects.all()
     if class_1 and class_0:
         goods = goods.filter(category__class_0=class_0,
-                             category__class_1=class_1)
+                             category__class_1=class_1).filter(on_sale=True).order_by('-updated_time')
     elif goods_id_list:
         goods_id_list = json.loads(goods_id_list)
         goods = goods.filter(id__in=goods_id_list)
@@ -69,9 +69,9 @@ def goods_list(request):
         goods = goods.filter(
             Q(name__icontains=keywords)
             | Q(category_full_name__icontains=keywords)
-            | Q(barcode__icontains=keywords))
+            | Q(barcode__icontains=keywords)).order_by('-updated_time')
     elif label:
-        goods = goods.filter(label=label)
+        goods = goods.filter(label=label).filter(on_sale=True).order_by('-updated_time')
     goods = goods[(page - 1) * page_size: page * page_size]
     serializer = GoodsSerializer(
         goods, many=True, context={'request': request})

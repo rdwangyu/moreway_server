@@ -108,7 +108,6 @@ def settle(request):
                 cart = Cart(user=user, goods=goods,
                             num=num, price=price, bill=bill)
                 cart.save()
-
                 total['payable'] += float(cart.price) * \
                     float(cart.num) - float(cart.discount)
                 total['num'] += num
