@@ -72,6 +72,8 @@ def goods_list(request):
             | Q(barcode__icontains=keywords)).order_by('-updated_time')
     elif label:
         goods = goods.filter(label=label).filter(on_sale=True).order_by('-updated_time')
+    else:
+        goods = goods.filter(on_sale=True).order_by('?')
     goods = goods[(page - 1) * page_size: page * page_size]
     serializer = GoodsSerializer(
         goods, many=True, context={'request': request})
