@@ -1,3 +1,4 @@
 moreway_server/settings.py
 __pycache__
 static/*
+migrations
