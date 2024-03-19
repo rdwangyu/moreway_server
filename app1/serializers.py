@@ -12,7 +12,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     def get_img(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.img.url)
+        return request.build_absolute_uri(obj.img.url) if obj.img else ''
 
 
 class BannerSerializer(serializers.ModelSerializer):
@@ -29,11 +29,11 @@ class BannerSerializer(serializers.ModelSerializer):
 
     def get_cover(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.cover.url)
+        return request.build_absolute_uri(obj.cover.url) if obj.cover else ''
 
     def get_poster(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.poster.url)
+        return request.build_absolute_uri(obj.poster.url) if obj.poster else ''
 
 
 class GoodsSerializer(serializers.ModelSerializer):
@@ -51,11 +51,11 @@ class GoodsSerializer(serializers.ModelSerializer):
 
     def get_thumb(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.thumb.url)
+        return request.build_absolute_uri(obj.thumb.url) if obj.thumb else ''
 
     def get_poster(self, obj):
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.poster.url)
+        return request.build_absolute_uri(obj.poster.url) if obj.poster else ''
 
 
 class SearchSerializer(serializers.ModelSerializer):
