@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view
 import json
 from app1.models import *
 from app1.serializers import *
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import timedelta, datetime
 import pytz
@@ -134,8 +134,14 @@ def settle(request):
 @api_view(('GET',))
 def bill_list(request):
     page_size = request.GET.get('page_size', 50)
-    bill = Bill.objects.all().order_by('status', '-created_time')
+    bill = Bill.objects.order_by('-created_time')
     bill = bill[0:page_size]
+    serializer = BillSerializer(bill, many=True, context={'request': request})
+    return Response(data=serializer.data)
+
+@api_view()
+def bill_is_online(request):
+    bill = Bill.objects.filter(~Q(status=3))
     serializer = BillSerializer(bill, many=True, context={'request': request})
     return Response(data=serializer.data)
 
