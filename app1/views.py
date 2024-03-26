@@ -57,9 +57,11 @@ def goods_list(request):
     page_size = int(request.GET.get('page_size', 20))
 
     goods = Goods.objects.all()
-    if class_1 and class_0:
-        goods = goods.filter(category__class_0=class_0,
-                             category__class_1=class_1).filter(on_sale=True).order_by('-updated_time')
+    if class_0:
+        goods = goods.filter(category__class_0=class_0)
+        if class_1:
+            goods = goods.filter(category__class_1=class_1)
+        goods = goods.filter(on_sale=True).order_by('-updated_time')
     elif goods_id_list:
         goods_id_list = json.loads(goods_id_list)
         goods = goods.filter(id__in=goods_id_list)
