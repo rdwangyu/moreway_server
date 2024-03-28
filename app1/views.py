@@ -14,7 +14,8 @@ from .serializers import *
 
 @api_view(('GET',))
 def category_list(request):
-    top_category = Category.objects.all().distinct('class_0')
+    top_category = Category.objects.all().distinct(
+        'class_0', 'priority').order_by('priority')
     serializer = CategorySerializer(
         top_category, many=True, context={'request': request})
     return Response(data=serializer.data)
@@ -48,6 +49,7 @@ def banner_detail(request, id):
 
 @api_view(('GET',))
 def goods_list(request):
+    print('GET params', request.GET)
     class_0 = request.GET.get('class_0')
     class_1 = request.GET.get('class_1')
     label = request.GET.get('label')
@@ -55,13 +57,15 @@ def goods_list(request):
     goods_id_list = request.GET.get('goods_id_list')
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
+    include_off_sale = bool(int(request.GET.get('include_off_sale', 0)))
 
     goods = Goods.objects.all()
+    goods = goods if include_off_sale else goods.filter(on_sale=True)
     if class_0:
         goods = goods.filter(category__class_0=class_0)
         if class_1:
             goods = goods.filter(category__class_1=class_1)
-        goods = goods.filter(on_sale=True).order_by('-updated_time')
+        goods = goods.order_by('-updated_time')
     elif goods_id_list:
         goods_id_list = json.loads(goods_id_list)
         goods = goods.filter(id__in=goods_id_list)
@@ -73,9 +77,10 @@ def goods_list(request):
             | Q(category_full_name__icontains=keywords)
             | Q(barcode__icontains=keywords)).order_by('-updated_time')
     elif label:
-        goods = goods.filter(label=label).filter(on_sale=True).order_by('-updated_time')
+        goods = goods.filter(label=label).filter(
+            on_sale=True).order_by('-updated_time')
     else:
-        goods = goods.filter(on_sale=True).order_by('?')
+        goods = goods.order_by('?')
     goods = goods[(page - 1) * page_size: page * page_size]
     serializer = GoodsSerializer(
         goods, many=True, context={'request': request})

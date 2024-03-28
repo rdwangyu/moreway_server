@@ -11,6 +11,7 @@ class Category(models.Model):
     ext_3 = models.CharField(default='')
     ext_4 = models.CharField(default='')
     img = models.ImageField(upload_to='category/', default='')
+    priority = models.IntegerField(default=99)
 
 
 class Banner(models.Model):
