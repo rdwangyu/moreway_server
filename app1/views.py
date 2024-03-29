@@ -60,16 +60,16 @@ def goods_list(request):
     include_off_sale = bool(int(request.GET.get('include_off_sale', 0)))
 
     goods = Goods.objects.all()
-    goods = goods if include_off_sale else goods.filter(on_sale=True)
     if class_0:
-        goods = goods.filter(category__class_0=class_0)
+        goods = goods.filter(category__class_0=class_0, on_sale=True)
         if class_1:
             goods = goods.filter(category__class_1=class_1)
         goods = goods.order_by('-updated_time')
     elif goods_id_list:
         goods_id_list = json.loads(goods_id_list)
-        goods = goods.filter(id__in=goods_id_list)
+        goods = goods.filter(on_sale=True, id__in=goods_id_list)
     elif keywords:
+        goods = goods if include_off_sale else goods.filter(on_sale=True)
         goods = goods.annotate(category_full_name=Concat('category__class_0', 'category__class_1',
                                                          'category__ext_0', 'category__ext_1', 'category__ext_2', 'category__ext_3', 'category__ext_4'))
         goods = goods.filter(
@@ -77,8 +77,8 @@ def goods_list(request):
             | Q(category_full_name__icontains=keywords)
             | Q(barcode__icontains=keywords)).order_by('-updated_time')
     elif label:
-        goods = goods.filter(label=label).filter(
-            on_sale=True).order_by('-updated_time')
+        goods = goods.filter(
+            on_sale=True, label=label).order_by('-updated_time')
     else:
         goods = goods.order_by('?')
     goods = goods[(page - 1) * page_size: page * page_size]
