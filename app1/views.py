@@ -80,7 +80,7 @@ def goods_list(request):
         goods = goods.filter(
             on_sale=True, label=label).order_by('-updated_time')
     else:
-        goods = goods.order_by('?')
+        goods = goods.filter(on_sale=True).order_by('?')
     goods = goods[(page - 1) * page_size: page * page_size]
     serializer = GoodsSerializer(
         goods, many=True, context={'request': request})
