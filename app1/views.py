@@ -67,7 +67,7 @@ def goods_list(request):
         goods = goods.order_by('-updated_time')
     elif goods_id_list:
         goods_id_list = json.loads(goods_id_list)
-        goods = goods.filter(on_sale=True, id__in=goods_id_list)
+        goods = goods.filter(on_sale=True, id__in=goods_id_list).order_by('-updated_time')
     elif keywords:
         goods = goods if include_off_sale else goods.filter(on_sale=True)
         goods = goods.annotate(category_full_name=Concat('category__class_0', 'category__class_1',
