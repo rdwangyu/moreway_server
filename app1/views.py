@@ -81,7 +81,7 @@ def goods_list(request):
         goods = goods.filter(
             on_sale=True, label=label).order_by('-updated_time')
     elif is_new:
-        goods = goods.filter(on_sale=True).order_by('-update_time')
+        goods = goods.filter(on_sale=True).order_by('-updated_time')
     else:
         goods = goods.filter(on_sale=True).order_by('?')
     goods = goods[(page - 1) * page_size: page * page_size]
