@@ -54,6 +54,7 @@ def goods_list(request):
     class_1 = request.GET.get('class_1')
     label = request.GET.get('label')
     keywords = request.GET.get('keywords')
+    is_new = bool(int(request.GET.get('is_new', 0)))
     goods_id_list = request.GET.get('goods_id_list')
     page = int(request.GET.get('page', 1))
     page_size = int(request.GET.get('page_size', 20))
@@ -79,6 +80,8 @@ def goods_list(request):
     elif label:
         goods = goods.filter(
             on_sale=True, label=label).order_by('-updated_time')
+    elif is_new:
+        goods = goods.filter(on_sale=True).order_by('-update_time')
     else:
         goods = goods.filter(on_sale=True).order_by('?')
     goods = goods[(page - 1) * page_size: page * page_size]
